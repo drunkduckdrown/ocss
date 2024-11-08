@@ -2,7 +2,7 @@
 一个Ubuntu,Centos,Debian等Linux系统全自动换源与docker一键安装换源脚本
 
 
-![](https://cdn.jsdelivr.net/gh/Master08s/img@main/img/202411081113060.png)
+![](https://cdn.jsdelivr.net/gh/Master08s/img@main/img/202411082114220.png)
 
 由于长久以来新服务器到手第一件事就是 **换源**
 但是手动编辑也太麻烦了 于是我就写了这个脚本
