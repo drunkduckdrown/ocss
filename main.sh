@@ -1,37 +1,84 @@
 #!/bin/bash
 
+# GitHub仓库信息
+GITHUB_REPO="Master08s/ocss"
+GITHUB_SCRIPT_URL="https://cdn.jsdelivr.net/gh/$GITHUB_REPO@latest/main.sh"
+GITHUB_VERSION_URL="https://cdn.jsdelivr.net/gh/$GITHUB_REPO@latest/version.txt"
+
+# 本地脚本路径
+LOCAL_SCRIPT_PATH="$(pwd)/ocss.sh"
+# 本地版本号路径
+LOCAL_VERSION_PATH="$(pwd)/version.txt"
+
 # 检测系统类型
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS=$ID
-    VERSION=$VERSION_ID
-else
-    echo -e "\033[1;31m无法检测系统类型。\033[0m"
-    exit 1
-fi
-
-# 显示当前系统版本
-echo -e "\033[1;32m当前系统: $OS $VERSION\033[0m"
-
-# 首次运行时更新软件包列表并安装wget和curl
-if [ ! -f /tmp/first_run_done ]; then
-    echo -e "\033[1;33m首次运行，正在更新软件包列表并安装wget和curl...\033[0m"
-    if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
-        sudo apt-get update -y
-        sudo apt-get install -y wget curl
-    elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "fedora" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
-        sudo yum update -y
-        sudo yum install -y wget curl
+detect_system() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$ID
+        VERSION=$VERSION_ID
+    elif [ -f /etc/lsb-release ]; then
+        . /etc/lsb-release
+        OS=$DISTRIB_ID
+        VERSION=$DISTRIB_RELEASE
+    elif [ -f /etc/debian_version ]; then
+        OS="debian"
+        VERSION=$(cat /etc/debian_version)
+    elif [ -f /etc/redhat-release ]; then
+        OS=$(awk '{print $1}' /etc/redhat-release | tr '[:upper:]' '[:lower:]')
+        VERSION=$(awk '{print $4}' /etc/redhat-release)
+    elif [ -f /etc/arch-release ]; then
+        OS="arch"
+        VERSION="rolling"
+    elif [ -f /etc/alpine-release ]; then
+        OS="alpine"
+        VERSION=$(cat /etc/alpine-release)
+    elif [ -f /etc/SuSE-release ]; then
+        OS="suse"
+        VERSION=$(grep 'VERSION =' /etc/SuSE-release | awk '{print $3}')
+    elif [ -f /etc/gentoo-release ]; then
+        OS="gentoo"
+        VERSION=$(cat /etc/gentoo-release | awk '{print $5}')
+    elif [ -f /etc/slackware-version ]; then
+        OS="slackware"
+        VERSION=$(cat /etc/slackware-version | awk '{print $2}')
+    elif [ -f /etc/mandriva-release ]; then
+        OS="mandriva"
+        VERSION=$(cat /etc/mandriva-release | awk '{print $3}')
+    elif [ -f /etc/mageia-release ]; then
+        OS="mageia"
+        VERSION=$(cat /etc/mageia-release | awk '{print $3}')
     else
-        echo -e "\033[1;31m不支持的系统类型。\033[0m"
+        echo -e "\033[1;31m无法检测系统类型。\033[0m"
         exit 1
     fi
-    touch /tmp/first_run_done
-    echo -e "\033[1;32m首次运行完成。\033[0m"
-fi
+}
+
+# 显示当前系统版本
+show_system_info() {
+    echo -e "\033[1;32m当前系统: $OS $VERSION\033[0m"
+}
+
+# 首次运行时更新软件包列表并安装wget和curl
+first_run() {
+    if [ ! -f /tmp/first_run_done ]; then
+        echo -e "\033[1;33m首次运行，正在更新软件包列表并安装wget和curl...\033[0m"
+        if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
+            sudo apt-get update -y
+            sudo apt-get install -y wget curl
+        elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "fedora" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
+            sudo yum update -y
+            sudo yum install -y wget curl
+        else
+            echo -e "\033[1;31m不支持的系统类型。\033[0m"
+            exit 1
+        fi
+        touch /tmp/first_run_done
+        echo -e "\033[1;32m首次运行完成。\033[0m"
+    fi
+}
 
 # 定义换源函数
-function change_source() {
+change_source() {
     echo -e "\033[1;34m正在更换为$1源...\033[0m"
     if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
         sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
@@ -60,7 +107,7 @@ EOF
 }
 
 # 定义恢复官方源函数
-function restore_official_source() {
+restore_official_source() {
     echo -e "\033[1;34m正在恢复为官方源...\033[0m"
     if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
         sudo cp /etc/apt/sources.list.bak /etc/apt/sources.list
@@ -77,7 +124,7 @@ function restore_official_source() {
 }
 
 # 更新软件包、清理缓存并修复依赖
-function update_and_clean() {
+update_and_clean() {
     echo -e "\033[1;33m正在更新软件包...\033[0m"
     if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
         sudo apt-get upgrade -y
@@ -103,7 +150,7 @@ function update_and_clean() {
 }
 
 # 一键毁灭功能
-function destroy_system() {
+destroy_system() {
     echo -e "\033[1;31m警告：此操作将永久破坏系统，只能通过重装系统才能恢复。\033[0m"
     echo -e "\033[1;31m请确保您已备份重要数据，并且您确实想要执行此操作。\033[0m"
     read -p "是否继续？(y/n): " confirm
@@ -171,106 +218,68 @@ function destroy_system() {
     fi
 }
 
-# 安装Docker
-function install_docker() {
-    echo -e "\033[1;34m正在安装Docker...\033[0m"
+# 安装 Docker
+install_docker() {
+    # 检测系统类型
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$ID
+    elif [ -f /etc/centos-release ]; then
+        OS="centos"
+    elif [ -f /etc/redhat-release ]; then
+        OS="rhel"
+    else
+        echo "无法检测系统类型，请手动安装 Docker。"
+        exit 1
+    fi
 
-    # 选择服务器位置
-    echo -e "\033[1;34m请选择服务器位置：\033[0m"
-    echo "1. 国内"
-    echo "2. 海外"
-    read -p "请选择并输入服务器位置 [ 1-2 ]：" server_location_choice
+    # 检查是否已经安装了 Docker
+    if command -v docker &> /dev/null; then
+        echo "Docker 已经安装，跳过安装步骤。"
+        return
+    fi
 
-    case $server_location_choice in
-        1)
-            SERVER_LOCATION="国内"
-            DOCKER_INSTALL_URL="https://get.daocloud.io/docker"
-            DOCKER_COMPOSE_URL="https://get.daocloud.io/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)"
+    # 根据系统类型选择安装方式
+    case $OS in
+        ubuntu|debian)
+            echo "检测到 $OS 系统，正在安装 Docker..."
+            sudo apt-get update &> /tmp/docker_install.log
+            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common >> /tmp/docker_install.log 2>&1
+            curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+            sudo apt-get update >> /tmp/docker_install.log 2>&1
+            sudo apt-get install -y docker-ce >> /tmp/docker_install.log 2>&1
             ;;
-        2)
-            SERVER_LOCATION="海外"
-            DOCKER_INSTALL_URL="https://get.docker.com"
-            DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)"
+        centos|rhel)
+            echo "检测到 $OS 系统，正在安装 Docker..."
+            sudo yum install -y yum-utils >> /tmp/docker_install.log 2>&1
+            sudo yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+            sudo yum install -y docker-ce >> /tmp/docker_install.log 2>&1
+            ;;
+        fedora)
+            echo "检测到 $OS 系统，正在安装 Docker..."
+            sudo dnf install -y dnf-plugins-core >> /tmp/docker_install.log 2>&1
+            sudo dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/fedora/docker-ce.repo
+            sudo dnf install -y docker-ce >> /tmp/docker_install.log 2>&1
             ;;
         *)
-            echo -e "\033[1;31m无效选择，请重新选择。\033[0m"
-            install_docker
-            return
+            echo "不支持的系统类型: $OS，请手动安装 Docker。"
+            exit 1
             ;;
     esac
 
-    # 获取Docker版本列表
-    echo -e "\033[1;34m正在获取Docker版本列表...\033[0m"
-    DOCKER_VERSIONS=$(curl -s https://api.github.com/repos/docker/docker-ce/tags | grep '"name":' | cut -d '"' -f 4 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$')
-
-    # 显示可用的 Docker 版本
-    echo -e "\033[1;34m请选择要安装的 Docker 版本：\033[0m"
-    select DOCKER_VERSION in $DOCKER_VERSIONS "latest"; do
-        if [ -n "$DOCKER_VERSION" ]; then
-            break
-        else
-            echo -e "\033[1;31m无效选择，请重新选择。\033[0m"
-        fi
-    done
-
-    # 卸载旧版本
-    if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
-        sudo apt-get remove -y docker docker-engine docker.io containerd runc
-    elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "fedora" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
-        sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+    # 检查安装是否成功
+    if [ $? -ne 0 ]; then
+        echo "Docker 安装失败，请检查日志文件 /tmp/docker_install.log 获取更多信息。"
+        exit 1
     fi
 
-    # 安装依赖
-    if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
-        sudo apt-get update
-        sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-    elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "fedora" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
-        sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-    fi
-
-    # 添加Docker官方GPG密钥
-    if [ ! -f /usr/share/keyrings/docker-archive-keyring.gpg ]; then
-        curl -fsSL https://download.docker.com/linux/$OS/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    else
-        echo -e "\033[1;33mDocker GPG密钥已存在，跳过下载。\033[0m"
-    fi
-
-    # 添加Docker软件源
-    if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/$OS $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-    elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
-        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-    elif [ "$OS" == "fedora" ]; then
-        sudo yum-config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-    fi
-
-    # 安装指定版本的Docker
-    if [ "$DOCKER_VERSION" == "latest" ]; then
-        if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-        elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
-            sudo yum install -y docker-ce docker-ce-cli containerd.io
-        elif [ "$OS" == "fedora" ]; then
-            sudo yum install -y docker-ce docker-ce-cli containerd.io
-        fi
-    else
-        if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "linuxmint" ] || [ "$OS" == "deepin" ] || [ "$OS" == "zorin" ] || [ "$OS" == "armbian" ] || [ "$OS" == "proxmox" ]; then
-            sudo apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION containerd.io
-        elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] || [ "$OS" == "opencloudos" ] || [ "$OS" == "openeuler" ] || [ "$OS" == "anolis" ]; then
-            sudo yum install -y docker-ce-$DOCKER_VERSION docker-ce-cli-$DOCKER_VERSION containerd.io
-        elif [ "$OS" == "fedora" ]; then
-            sudo yum install -y docker-ce-$DOCKER_VERSION docker-ce-cli-$DOCKER_VERSION containerd.io
-        fi
-    fi
-
-    # 启动并设置Docker开机自启
+    # 启动 Docker 服务并设置开机自启
     sudo systemctl start docker
     sudo systemctl enable docker
 
-    # 安装Docker Compose
-    sudo curl -L "$DOCKER_COMPOSE_URL" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+    # 添加当前用户到 docker 组
+    sudo usermod -aG docker $USER
 
     # 配置Docker镜像加速器
     echo -e "\033[1;34m请选择Docker镜像加速器：\033[0m"
@@ -777,12 +786,17 @@ function change_source_menu() {
 # 主菜单
 function main_menu() {
     clear
-    echo -e "\033[1;32m欢迎使用系统换源与docker安装脚本\033[0m"
-    echo "1. 系统源管理"
-    echo "2. Docker管理"
-    echo "3. Node.js管理"
-    echo "4. 一键毁灭系统 (危险操作)"
-    echo "5. 退出"
+    echo -e "\033[1;34m=================================================="
+    echo -e "  \033[1;36m欢迎使用系统换源与 Docker 安装脚本\033[0m"
+    echo -e "  \033[1;36m自动载入本地-脚本已是最新版本。\033[0m"
+    echo -e "  \033[1;36m命令行输入 \033[1;33mocss\033[1;36m 可快捷使用脚本\033[0m"
+    echo -e "\033[1;34m==================================================\033[0m"
+    echo -e "\033[1;32m1.\033[0m 系统源管理"
+    echo -e "\033[1;32m2.\033[0m Docker管理"
+    echo -e "\033[1;32m3.\033[0m Node.js管理"
+    echo -e "\033[1;31m4.\033[0m 一键毁灭系统 (危险操作)"
+    echo -e "\033[1;32m5.\033[0m 退出"
+    echo -e "\033[1;34m==================================================\033[0m"
     read -p "请选择操作: " choice
 
     case $choice in
@@ -875,23 +889,23 @@ function docker_management_menu() {
 function nodejs_management_menu() {
     clear
     echo -e "\033[1;32mNode.js管理\033[0m"
-    # echo "1. 一键安装Node.js"
-    echo "1. 一键切换Node.js源"
-    echo "2. 一键完全卸载Node.js"
-    echo "3. 返回主菜单"
+    echo "1. 一键安装Node.js"
+    echo "2. 一键切换Node.js源"
+    echo "3. 一键完全卸载Node.js"
+    echo "4. 返回主菜单"
     read -p "请选择操作: " choice
 
     case $choice in
-        # 1)
-        #     install_nodejs
-        #     ;;
         1)
-            change_nodejs_source
+            install_nodejs
             ;;
         2)
-            uninstall_nodejs
+            change_nodejs_source
             ;;
         3)
+            uninstall_nodejs
+            ;;
+        4)
             main_menu
             ;;
         *)
@@ -937,7 +951,7 @@ EOF
 # 显示脚本信息
 function show_script_info() {
     echo -e "\033[1;34m脚本作者：Master\033[0m"
-    echo -e "\033[1;34m版本：3.0\033[0m"
+    echo -e "\033[1;34m版本：4.0\033[0m"
     echo -e "\033[1;34m最后更新：2024-11-08\033[0m"
     echo ""
     echo -e "\033[1;34m该脚本旨在帮助用户优化系统、更换软件源、安装Docker，并提供一键毁灭系统的危险操作。请谨慎使用。\033[0m"
@@ -945,7 +959,50 @@ function show_script_info() {
     sleep 3
 }
 
+# 检查并更新脚本
+function check_and_update_script() {
+    if [ ! -f "$LOCAL_SCRIPT_PATH" ]; then
+        echo -e "\033[1;33m未检测到本地脚本，正在下载...\033[0m"
+        download_script
+    else
+        echo -e "\033[1;33m正在检查脚本版本...\033[0m"
+        local_version=$(cat "$LOCAL_VERSION_PATH")
+        remote_version=$(curl -s "$GITHUB_VERSION_URL")
+
+        if [ "$local_version" != "$remote_version" ]; then
+            echo -e "\033[1;33m检测到新版本，正在更新...\033[0m"
+            download_script
+        else
+            echo -e "\033[1;32m脚本已是最新版本。\033[0m"
+        fi
+    fi
+}
+
+# 下载脚本和版本号文件
+function download_script() {
+    echo -e "\033[1;33m正在下载脚本...\033[0m"
+    curl -o "$LOCAL_SCRIPT_PATH" "$GITHUB_SCRIPT_URL"
+    curl -o "$LOCAL_VERSION_PATH" "$GITHUB_VERSION_URL"
+    echo -e "\033[1;32m脚本下载完成。\033[0m"
+    
+}
+
+# 自动添加脚本到 PATH 并创建符号链接
+function add_to_path_and_create_symlink() {
+    if [ ! -f /usr/local/bin/ocss ]; then
+        echo -e "\033[1;33m正在将脚本添加到 PATH 并创建符号链接...\033[0m"
+        sudo ln -s "$LOCAL_SCRIPT_PATH" /usr/local/bin/ocss
+        echo -e "\033[1;32m脚本已添加到 PATH，并创建了符号链接。\033[0m"
+        sudo chmod +x /root/ocss.sh
+    else
+        echo -e "\033[1;32m脚本已存在于 PATH 中。\033[0m"
+        sudo chmod +x /root/ocss.sh
+    fi
+}
+
 # 运行主菜单
 show_ascii_art
 show_script_info
+check_and_update_script
+add_to_path_and_create_symlink
 main_menu
