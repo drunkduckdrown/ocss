@@ -1,5 +1,6 @@
 # ocss(One-Click Source Switch)
-一个Ubuntu,Centos,Debian,node.js全自动换源与docker一键安装换源
+一个Ubuntu,Centos,Debian等Linux系统全自动换源与docker一键安装换源脚本
+
 
 ![](https://cdn.jsdelivr.net/gh/Master08s/img@main/img/202411081113060.png)
 
@@ -7,11 +8,15 @@
 但是手动编辑也太麻烦了 于是我就写了这个脚本
 
 
+目前系统换源支持：
+
+
 ---
 
 脚本功能：
-1.Ubuntu,Centos,Debian全自动换源
+1.Ubuntu,Centos,Debian等Linux系统全自动换源
 2.docker自动一键安装换源
+3.node.js一键换源
 
 ![](https://cdn.jsdelivr.net/gh/Master08s/img@main/img/202411081114977.png)
 
