@@ -21,7 +21,8 @@
 脚本运行命令
 
 ```
-bash <(curl -sSL https://cdn.jsdelivr.net/gh/Master08s/ocss@main/main.sh)
+
+bash <(curl -sSL https://cdn.jsdelivr.net/gh/Master08s/ocss@latest/main.sh)
 ```
 -----
 修复与更新：
