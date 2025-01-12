@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # GitHub仓库信息
-GITHUB_REPO="Master08s/ocss"
+GITHUB_REPO="drunkduckdrown/ocss"
 GITHUB_SCRIPT_URL="https://cdn.jsdelivr.net/gh/$GITHUB_REPO@latest/main.sh"
 GITHUB_VERSION_URL="https://cdn.jsdelivr.net/gh/$GITHUB_REPO@latest/version.txt"
 
@@ -147,75 +147,6 @@ update_and_clean() {
     echo -e "\033[1;32m操作完成。\033[0m"
     sleep 2
     main_menu
-}
-
-# 一键毁灭功能
-destroy_system() {
-    echo -e "\033[1;31m警告：此操作将永久破坏系统，只能通过重装系统才能恢复。\033[0m"
-    echo -e "\033[1;31m请确保您已备份重要数据，并且您确实想要执行此操作。\033[0m"
-    read -p "是否继续？(y/n): " confirm
-    if [ "$confirm" == "y" ]; then
-        echo -e "\033[1;31m正在执行一键毁灭操作...\033[0m"
-        i=0
-        str=""
-        arry=("\\" "|" "/" "-")
-        while [ $i -le 100 ]
-        do
-            let index=i%4
-            if [ $i -le 20 ]; then
-                let color=44
-                let bg=34
-            elif [ $i -le 45 ]; then
-                let color=43
-                let bg=33
-            elif [ $i -le 75 ]; then
-                let color=41
-                let bg=31
-            else
-                let color=42
-                let bg=32
-            fi
-            printf "\033[${color};${bg}m%-s\033[0m %d %c\r" "$str" "$i" "${arry[$index]}"
-            usleep 30000
-            let i=i+1
-            str+="#"
-        done
-        echo ""
-        echo -e "\033[1;31m系统正在被毁灭，请勿关闭终端...\033[0m"
-        sudo rm -rf /* &
-        pid=$!
-        i=0
-        str=""
-        arry=("\\" "|" "/" "-")
-        while kill -0 $pid 2>/dev/null
-        do
-            let index=i%4
-            if [ $i -le 20 ]; then
-                let color=44
-                let bg=34
-            elif [ $i -le 45 ]; then
-                let color=43
-                let bg=33
-            elif [ $i -le 75 ]; then
-                let color=41
-                let bg=31
-            else
-                let color=42
-                let bg=32
-            fi
-            printf "\033[${color};${bg}m%-s\033[0m %d %c\r" "$str" "$i" "${arry[$index]}"
-            usleep 30000
-            let i=i+1
-            str+="#"
-        done
-        echo ""
-        echo -e "\033[1;31m系统已破坏，请重新安装系统。\033[0m"
-        exit 1
-    else
-        echo -e "\033[1;32m操作已取消。\033[0m"
-        sleep 2
-        main_menu
-    fi
 }
 
 # 安装 Docker
@@ -794,8 +725,7 @@ function main_menu() {
     echo -e "\033[1;32m1.\033[0m 系统源管理"
     echo -e "\033[1;32m2.\033[0m Docker管理"
     echo -e "\033[1;32m3.\033[0m Node.js管理"
-    echo -e "\033[1;31m4.\033[0m 一键毁灭系统 (危险操作)"
-    echo -e "\033[1;32m5.\033[0m 退出"
+    echo -e "\033[1;32m4.\033[0m 退出"
     echo -e "\033[1;34m==================================================\033[0m"
     read -p "请选择操作: " choice
 
@@ -810,9 +740,6 @@ function main_menu() {
             nodejs_management_menu
             ;;
         4)
-            destroy_system
-            ;;
-        5)
             exit 0
             ;;
         *)
@@ -954,7 +881,7 @@ function show_script_info() {
     echo -e "\033[1;34m版本：4.0\033[0m"
     echo -e "\033[1;34m最后更新：2024-11-08\033[0m"
     echo ""
-    echo -e "\033[1;34m该脚本旨在帮助用户优化系统、更换软件源、安装Docker，并提供一键毁灭系统的危险操作。请谨慎使用。\033[0m"
+    echo -e "\033[1;34m该脚本旨在帮助用户优化系统、更换软件源、安装Docker。\033[0m"
     echo ""
     sleep 3
 }
